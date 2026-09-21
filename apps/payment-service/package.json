@@ -5,7 +5,19 @@
   "scripts": {
     "start:dev": "nest start --watch",
     "build": "nest build",
-    "start:prod": "node dist/main"
+    "start:prod": "node dist/main",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage"
+  },
+  "jest": {
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": { "^.+\\.(t|j)s$": "ts-jest" },
+    "collectCoverageFrom": ["**/*.(t|j)s"],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.0",
@@ -26,6 +38,10 @@
   "devDependencies": {
     "@nestjs/cli": "^10.4.0",
     "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.4",
     "typescript": "^5.5.0"
   }
 }

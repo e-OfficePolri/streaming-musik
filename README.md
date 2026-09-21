@@ -48,17 +48,20 @@ Untuk coba alur lengkap login → cek subscription → streaming secara lokal:
 
 ## Testing
 
-`apps/auth-service` sudah punya automated test (Jest). Karena sandbox
-pengembangan ini tidak selalu punya akses internet untuk `npm install`,
-cara paling praktis untuk benar-benar menjalankan test adalah lewat GitHub
-Actions: setiap push atau pull request yang mengubah `apps/auth-service/`
-otomatis menjalankan test-nya (lihat `.github/workflows/test-auth-service.yml`).
-Push repo ini ke GitHub, dan hasil test akan muncul di tab "Actions" —
-termasuk laporan code coverage yang bisa didownload sebagai artifact.
+`apps/auth-service`, `apps/catalog-service`, dan `apps/payment-service` sudah
+punya automated test (Jest) — `payment-service` yang paling penting untuk
+diperhatikan karena menyangkut logic uang sungguhan (checkout, webhook
+idempotency, renewal). Karena sandbox pengembangan ini tidak selalu punya
+akses internet untuk `npm install`, cara paling praktis untuk benar-benar
+menjalankan test adalah lewat GitHub Actions: setiap push atau pull request
+yang mengubah salah satu dari ketiga service ini otomatis menjalankan
+test-nya masing-masing (lihat `.github/workflows/test-*.yml`).
 
 Untuk jalankan lokal (kalau `npm install` bisa akses internet di mesinmu):
 ```bash
 cd apps/auth-service && npm install && npm test
+cd apps/catalog-service && npm install && npm test
+cd apps/payment-service && npm install && npm test
 ```
 
 ## Langkah selanjutnya
