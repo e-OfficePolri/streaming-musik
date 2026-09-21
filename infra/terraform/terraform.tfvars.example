@@ -1,0 +1,7 @@
+# Salin file ini jadi terraform.tfvars dan isi nilai sebenarnya.
+# JANGAN commit terraform.tfvars ke git (lihat .gitignore).
+
+db_password  = "GANTI_DENGAN_PASSWORD_KUAT"
+environment  = "dev"
+aws_region   = "ap-southeast-1"
+github_repo  = "namamu/streaming-musik" # untuk OIDC GitHub Actions, lihat oidc.tf
