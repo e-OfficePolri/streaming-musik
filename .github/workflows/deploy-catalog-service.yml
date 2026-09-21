@@ -1,0 +1,19 @@
+name: Deploy catalog-service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/catalog-service/**"
+      - ".github/workflows/deploy-catalog-service.yml"
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-template.yml
+    with:
+      service_name: catalog-service
+      build_context: apps/catalog-service
+      ecs_cluster: streaming-musik-dev
+      aws_region: ap-southeast-1
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}

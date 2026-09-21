@@ -1,0 +1,82 @@
+name: Reusable deploy ke ECS
+
+# Dipanggil oleh workflow per-service (deploy-auth-service.yml, dst) lewat
+# `workflow_call`, supaya logic build+push+deploy tidak diduplikasi 3x.
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: "Nama service, harus cocok dengan key aws_ecr_repository.services di Terraform (auth-service/catalog-service/media-service)"
+        required: true
+        type: string
+      build_context:
+        description: "Path folder yang berisi Dockerfile service ini"
+        required: true
+        type: string
+      ecs_cluster:
+        required: true
+        type: string
+      aws_region:
+        required: true
+        type: string
+    secrets:
+      AWS_ROLE_ARN:
+        required: true
+
+permissions:
+  id-token: write # wajib untuk OIDC — GitHub tukar token ini ke kredensial AWS sementara
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # OIDC: tidak ada AWS access key yang disimpan sebagai GitHub secret —
+      # role di AWS mempercayai token OIDC dari repo ini secara langsung.
+      # Setup IAM role-nya ada di infra/terraform/oidc.tf.
+      - name: Konfigurasi kredensial AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Login ke ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push image
+        env:
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          REPOSITORY: streaming-musik/${{ inputs.service_name }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -t $REGISTRY/$REPOSITORY:latest ${{ inputs.build_context }}
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          docker push $REGISTRY/$REPOSITORY:latest
+
+      # aws-actions/amazon-ecs-render-task-definition butuh file JSON sebagai
+      # input, bukan nama family langsung — jadi kita download definisi yang
+      # sedang aktif dulu, baru render dengan image tag baru di atasnya.
+      - name: Ambil task definition aktif
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition streaming-musik-dev-${{ inputs.service_name }} \
+            --query taskDefinition > task-definition.json
+
+      - name: Update task definition dengan image baru
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ inputs.service_name }}
+          image: ${{ steps.ecr-login.outputs.registry }}/streaming-musik/${{ inputs.service_name }}:${{ github.sha }}
+
+      - name: Deploy ke ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ inputs.service_name }}
+          cluster: ${{ inputs.ecs_cluster }}
+          wait-for-service-stability: true

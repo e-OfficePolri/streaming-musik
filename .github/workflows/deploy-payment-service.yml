@@ -1,0 +1,19 @@
+name: Deploy payment-service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/payment-service/**"
+      - ".github/workflows/deploy-payment-service.yml"
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-template.yml
+    with:
+      service_name: payment-service
+      build_context: apps/payment-service
+      ecs_cluster: streaming-musik-dev
+      aws_region: ap-southeast-1
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}

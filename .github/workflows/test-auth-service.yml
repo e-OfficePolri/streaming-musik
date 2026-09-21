@@ -1,0 +1,51 @@
+name: Test auth-service
+
+# Beda dengan deploy-auth-service.yml (yang hanya jalan di push ke main),
+# workflow ini SENGAJA juga jalan di pull_request — supaya test ketahuan
+# gagal SEBELUM kode di-merge, bukan setelah ter-deploy ke production.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/auth-service/**"
+      - ".github/workflows/test-auth-service.yml"
+  pull_request:
+    paths:
+      - "apps/auth-service/**"
+      - ".github/workflows/test-auth-service.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/auth-service
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          # TIDAK pakai cache: "npm" di sini — itu butuh package-lock.json
+          # yang belum ada di repo ini (belum pernah npm install). Begitu
+          # kamu jalankan `npm install` sekali secara lokal dan commit
+          # package-lock.json yang dihasilkan, aktifkan lagi cache ini untuk
+          # mempercepat run berikutnya: tambahkan `cache: "npm"` dan
+          # `cache-dependency-path: apps/auth-service/package-lock.json`.
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Jalankan test
+        run: npm test -- --coverage
+
+      # Coverage report tersimpan sebagai artifact yang bisa didownload dari
+      # halaman run GitHub Actions — berguna untuk lihat baris mana yang
+      # belum ter-cover, tanpa perlu jalankan coverage lokal.
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-service-coverage
+          path: apps/auth-service/coverage/

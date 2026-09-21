@@ -1,0 +1,19 @@
+name: Deploy auth-service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/auth-service/**"
+      - ".github/workflows/deploy-auth-service.yml"
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-template.yml
+    with:
+      service_name: auth-service
+      build_context: apps/auth-service
+      ecs_cluster: streaming-musik-dev
+      aws_region: ap-southeast-1
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
